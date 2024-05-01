@@ -12,4 +12,5 @@ fpg = np.loadtxt("./signals/fpg1.txt", dtype="float")
 pan_tomkins = pantomkins.Pan_tompkins
 
 [qrs_amp_raw, qrs_i_raw, delay] = pan_tomkins(ecg[2500:5000], 200, True).run()
+# [qrs_amp_raw, qrs_i_raw, delay] = pan_tomkins(ecg[2500:5000], 400, True).run()
 print(qrs_amp_raw)
