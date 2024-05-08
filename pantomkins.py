@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import lfilter, convolve, butter, filtfilt, find_peaks, find_peaks_cwt
+from scipy.signal import lfilter, convolve, butter, filtfilt, find_peaks
 
 
 class Pan_tompkins:
@@ -401,6 +401,7 @@ class Pan_tompkins:
         plt.plot(self.locs, self.NOISL_buf, "--k", linewidth=2)
         plt.plot(self.locs, self.SIGL_buf, "--r", linewidth=2)
         plt.plot(self.locs, self.THRS_buf, "--g", linewidth=2)
+        plt.show()
 
     def plot_results(self):
         # Create figure and subplots
@@ -447,10 +448,14 @@ class Pan_tompkins:
 
     def run(self):
         self.plot_raw_ecg()
+        # filters
         self.filter_signal()
         self.fiducial_mark()
+        # init variables
         self.init_training()
+        # find qrs
         self.find_peaks()
+        # show plots
         self.plot_peaks()
-        plt.show()
+        self.plot_results()
         return [self.qrs_amp_raw, self.qrs_i_raw, self.delay]

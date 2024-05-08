@@ -1,11 +1,11 @@
 import pantomkins
 import numpy as np
 
-data = np.loadtxt("./signals/pat1_1.txt", dtype="str")
+data = np.loadtxt("./signals/raw_data/pat1_1.txt", dtype="str")
 
 # get ecg and fpg
-ecg = np.loadtxt("./signals/ecg1.txt", dtype="float")
-fpg = np.loadtxt("./signals/fpg1.txt", dtype="float")
+ecg = np.loadtxt("./signals/data_to_use/ecg1.txt", dtype="float")
+fpg = np.loadtxt("./signals/data_to_use/fpg1.txt", dtype="float")
 
 
 # find qrs
