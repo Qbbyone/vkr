@@ -180,6 +180,9 @@ class Pan_tompkins:
         self.pks = pks  # Local maxima, returned as a vector of signal values
         self.locs = locs  # a vector of indices (peaks locations)
 
+        print(self.pks)
+        print(self.locs)
+
     def init_training(self):
         # initialize the training phase (2 seconds of the signal) to determine the THR_SIG and THR_NOISE
         self.THR_SIG = np.max(self.ecg_m[0 : 2 * self.fs]) * (
@@ -253,6 +256,7 @@ class Pan_tompkins:
                 self.test_m = 0
 
             if self.test_m:
+                # todo
                 """
                 if (self.locs[i] - self.qrs_i[-1]) >= round(
                     1.66 * self.test_m
