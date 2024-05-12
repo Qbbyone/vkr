@@ -37,6 +37,7 @@ class Pan_tompkins:
         self.qrs_amp_raw = []
         self.qrs_i_raw = []
         self.delay = 0
+        self.qrs_locs = []
 
     def plot_raw_ecg(self):
         fig, ax = plt.subplots(3, 2)
@@ -180,9 +181,6 @@ class Pan_tompkins:
         self.pks = pks  # Local maxima, returned as a vector of signal values
         self.locs = locs  # a vector of indices (peaks locations)
 
-        print(self.pks)
-        print(self.locs)
-
     def init_training(self):
         # initialize the training phase (2 seconds of the signal) to determine the THR_SIG and THR_NOISE
         self.THR_SIG = np.max(self.ecg_m[0 : 2 * self.fs]) * (
@@ -231,7 +229,7 @@ class Pan_tompkins:
                         for idx, v in enumerate(self.ecg_h[self.locs[i] - fs_r_150 :])
                     )
 
-            # update the heart_rate (Two heart rate means one the moste recent and the other selected)
+            # update the heart_rate (Two heart rate means one the most recent and the other selected)
             if len(self.qrs_c) >= 9:
                 diffRR = np.diff(self.qrs_i[-9:])  # calculate RR interval
                 self.mean_RR = np.mean(
