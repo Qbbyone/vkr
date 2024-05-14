@@ -16,7 +16,7 @@ ppg = ppg_analyzer.Ppg_analyzer
 # find qrs
 ecg_data = np.loadtxt("./signals/input_data/ecg/ecg1_1.txt", dtype="float")
 
-ecg_sample = ecg_data[:10000]
+ecg_sample = ecg_data[6000:26000]
 # ecg_sample = ecg
 
 # [qrs_amp_raw, qrs_i_raw, delay] = pan_tomkins(ecg_sample, 200, True).run()
@@ -30,21 +30,21 @@ ecg_sample = ecg_data[:10000]
 
 # find min-max ppg (photoplethysmogram)
 ppg_data = np.loadtxt("./signals/input_data/ppg/ppg1_1.txt", dtype="float")
-ppg_sample = ppg_data[:30000]
-ppg_sample = ppg_data
+ppg_sample = ppg_data[6000:26000]
+# ppg_sample = ppg_data
 [min_max_amp] = ppg(ppg_sample, 200).run()
 
 # calc metrics for ppg
 
 
+# test plots
 def plot_both_signals():
     plt.rcParams["figure.figsize"] = [7.50, 3.50]
     plt.rcParams["figure.autolayout"] = True
-    # v x = np.linspace(-2, 2, 10)
     plt.subplot(211)
-    plt.plot(ecg_data[6000:26000])
+    plt.plot(ecg_sample)
     plt.subplot(212)
-    plt.plot(ppg_data[6000:26000])
+    plt.plot(ppg_sample)
     plt.show()
 
 
