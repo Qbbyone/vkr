@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import lfilter, convolve, butter, filtfilt, find_peaks
 
 
-class Pan_tompkins:
+class Ecg_analyzer:
 
     def __init__(self, ecg, fs, gr=True):
 

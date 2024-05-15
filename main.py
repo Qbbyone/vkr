@@ -1,13 +1,13 @@
 import utils
 import metrics
-import pantomkins
+import ecg_analyzer
 import ppg_analyzer
 import numpy as np
 import matplotlib.pyplot as plt
 
 # init classes
 ut = utils.Utils()
-pan_tomkins = pantomkins.Pan_tompkins
+ecg = ecg_analyzer.Ecg_analyzer
 ppg = ppg_analyzer.Ppg_analyzer
 
 # files
@@ -17,10 +17,10 @@ ppg = ppg_analyzer.Ppg_analyzer
 ecg_data = np.loadtxt("./signals/input_data/ecg/ecg1_1.txt", dtype="float")
 
 ecg_sample = ecg_data[6000:26000]
-# ecg_sample = ecg
+# ecg_sample = ecg_data
 
-# [qrs_amp_raw, qrs_i_raw, delay] = pan_tomkins(ecg_sample, 200, True).run()
-# [qrs_amp_raw, qrs_i_raw, delay] = pan_tomkins(ecg_sample, 400, True).run()
+# [qrs_amp_raw, qrs_i_raw, delay] = ecg(ecg_sample, 200, True).run()
+# [qrs_amp_raw, qrs_i_raw, delay] = ecg(ecg_sample, 400, True).run()
 # print(qrs_amp_raw)
 # print(qrs_i_raw)
 
