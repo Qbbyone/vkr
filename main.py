@@ -35,6 +35,7 @@ ppg_sample = ppg_data[6000:26000]
 [min_max_amp] = ppg(ppg_sample, 200).run()
 
 # calc metrics for ppg
+print('test')
 
 
 # test plots
