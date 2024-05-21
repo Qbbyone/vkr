@@ -16,11 +16,19 @@ ppg = ppg_analyzer.Ppg_analyzer
 # find qrs
 ecg_data = np.loadtxt("./signals/input_data/ecg/ecg1_1.txt", dtype="float")
 
+<<<<<<< Updated upstream
 ecg_sample = ecg_data[6000:26000]
 # ecg_sample = ecg_data
 
 # [qrs_amp_raw, qrs_i_raw, delay] = ecg(ecg_sample, 200, True).run()
 # [qrs_amp_raw, qrs_i_raw, delay] = ecg(ecg_sample, 400, True).run()
+=======
+ecg_sample = ecg_data[6000:20000]
+# ecg_sample = ecg
+
+[qrs_amp_raw, qrs_i_raw, delay] = pan_tomkins(ecg_sample, 200, True).run()
+# [qrs_amp_raw, qrs_i_raw, delay] = pan_tomkins(ecg_sample, 400, True).run()
+>>>>>>> Stashed changes
 # print(qrs_amp_raw)
 # print(qrs_i_raw)
 
@@ -30,9 +38,9 @@ ecg_sample = ecg_data[6000:26000]
 
 # find min-max ppg (photoplethysmogram)
 ppg_data = np.loadtxt("./signals/input_data/ppg/ppg1_1.txt", dtype="float")
-ppg_sample = ppg_data[6000:26000]
+ppg_sample = ppg_data[6000:20000]
 # ppg_sample = ppg_data
-[min_max_amp] = ppg(ppg_sample, 200).run()
+# [min_max_amp] = ppg(ppg_sample, 200, True).run()
 
 # calc metrics for ppg
 print('test')
