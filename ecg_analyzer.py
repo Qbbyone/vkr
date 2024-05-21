@@ -449,7 +449,8 @@ class Ecg_analyzer:
         plt.show()
 
     def run(self):
-        self.plot_raw_ecg()
+        if self.gr:
+            self.plot_raw_ecg()
         # filters
         self.filter_signal()
         self.fiducial_mark()
@@ -458,6 +459,61 @@ class Ecg_analyzer:
         # find qrs
         self.find_peaks()
         # show plots
-        self.plot_peaks()
-        self.plot_results()
+        if self.gr:
+            self.plot_peaks()
+            self.plot_results()
+
+        """
+        plt.figure()
+        plt.subplot(211)
+        plt.plot(ecg_s)
+        plt.title("Квадрат сигнала")
+        plt.subplot(212)
+        plt.plot(self.ecg_m)
+        plt.title("Усреднение по скользящему окну")
+        plt.show()
+        """
+
+        """
+        plt.figure()
+        plt.plot(self.ecg_m, label="Усредненный сигнал")
+        plt.scatter(self.qrs_i, self.qrs_c, color="m")
+        plt.plot(
+            self.locs,
+            self.NOISL_buf,
+            linewidth=2,
+            linestyle="--",
+            color="k",
+            label="Уровень шума",
+        )
+        plt.plot(
+            self.locs,
+            self.SIGL_buf,
+            linewidth=2,
+            linestyle="-.",
+            color="r",
+            label="Уровень сигнала",
+        )
+        plt.plot(
+            self.locs,
+            self.THRS_buf,
+            linewidth=2,
+            linestyle="-.",
+            color="g",
+            label="Адаптивный порог",
+        )
+        plt.legend()
+        plt.title("QRS-комплексы на усредненном сигнале")
+        plt.show()
+        """
+
         return [self.qrs_amp_raw, self.qrs_i_raw, self.delay]
+
+    def test_plot(self, a, b, label_a, label_b, title):
+        # plot
+        plt.figure()
+        plt.plot(a, label=label_a)
+        plt.plot(b, label=label_b)
+        plt.title(title)
+        plt.legend()
+        plt.show()

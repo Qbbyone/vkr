@@ -2,13 +2,15 @@ import utils
 import metrics
 import ecg_analyzer
 import ppg_analyzer
+import ppg_analyzer
 import numpy as np
 import matplotlib.pyplot as plt
 
 # init classes
 ut = utils.Utils()
 ecg = ecg_analyzer.Ecg_analyzer
-ppg = ppg_analyzer.Ppg_analyzer
+ppg = ppg_analyzer.PPGAnalyzer
+ppg_analyzer = ppg_analyzer.PPGAnalyzer
 
 # files
 # ut.create_ecg_input_data("pat1_2")
@@ -16,19 +18,11 @@ ppg = ppg_analyzer.Ppg_analyzer
 # find qrs
 ecg_data = np.loadtxt("./signals/input_data/ecg/ecg1_1.txt", dtype="float")
 
-<<<<<<< Updated upstream
-ecg_sample = ecg_data[6000:26000]
+ecg_sample = ecg_data[6000:20000]
 # ecg_sample = ecg_data
 
-# [qrs_amp_raw, qrs_i_raw, delay] = ecg(ecg_sample, 200, True).run()
+# [qrs_amp_raw, qrs_i_raw, delay] = ecg(ecg_sample, 200, False).run()
 # [qrs_amp_raw, qrs_i_raw, delay] = ecg(ecg_sample, 400, True).run()
-=======
-ecg_sample = ecg_data[6000:20000]
-# ecg_sample = ecg
-
-[qrs_amp_raw, qrs_i_raw, delay] = pan_tomkins(ecg_sample, 200, True).run()
-# [qrs_amp_raw, qrs_i_raw, delay] = pan_tomkins(ecg_sample, 400, True).run()
->>>>>>> Stashed changes
 # print(qrs_amp_raw)
 # print(qrs_i_raw)
 
@@ -40,10 +34,11 @@ ecg_sample = ecg_data[6000:20000]
 ppg_data = np.loadtxt("./signals/input_data/ppg/ppg1_1.txt", dtype="float")
 ppg_sample = ppg_data[6000:20000]
 # ppg_sample = ppg_data
-# [min_max_amp] = ppg(ppg_sample, 200, True).run()
+# [min_max_amp] = ppg(ppg_sample, 1000.0, True).run()
+[min_max_amp] = ppg_analyzer(ppg_sample, 1000.0, True).run()
 
 # calc metrics for ppg
-print('test')
+# print("test")
 
 
 # test plots
