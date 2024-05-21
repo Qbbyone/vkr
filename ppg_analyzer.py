@@ -14,6 +14,7 @@ class PPGAnalyzer:
 
     def filter_ppg(self):
         # filter cut-offs, hertz
+        """
         lpf_cutoff = 0.7
         hpf_cutoff = 10
 
@@ -31,6 +32,12 @@ class PPGAnalyzer:
 
         # filter PPG
         self.filtered_ppg = sp.sosfiltfilt(sos_filter, self.ppg)
+        """
+        nyquist = 0.5 * self.fs
+        low = 0.5 / nyquist
+        high = 8.0 / nyquist
+        b, a = sp.butter(1, [low, high], btype="band")
+        self.filtered_ppg = sp.filtfilt(b, a, self.ppg)
 
         if self.gr:
             plt.figure()
