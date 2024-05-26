@@ -463,6 +463,8 @@ class Ecg_analyzer:
             self.plot_peaks()
             self.plot_results()
 
+        print(self.qrs_i_raw)
+
         """
         plt.figure()
         plt.subplot(211)
