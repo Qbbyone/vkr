@@ -38,6 +38,7 @@ class Ecg_analyzer:
         self.qrs_i_raw = []
         self.delay = 0
         self.qrs_locs = []
+        self.amp = []
 
     def plot_raw_ecg(self):
         fig, ax = plt.subplots(3, 2)
@@ -52,6 +53,9 @@ class Ecg_analyzer:
             plt.plot(self.ecg)
             plt.axis("tight")
             plt.title("Raw ECG Signal")
+
+    def prep_signal(self):
+        self.prep_ecg = []
 
     def filter_signal(self):
         if self.fs == 200:
@@ -183,22 +187,30 @@ class Ecg_analyzer:
 
     def init_training(self):
         # initialize the training phase (2 seconds of the signal) to determine the THR_SIG and THR_NOISE
+        """
         self.THR_SIG = np.max(self.ecg_m[0 : 2 * self.fs]) * (
             1 / 3
         )  # 0.25 of the max amplitude
+        """
 
-        self.THR_NOISE = np.mean(self.ecg_m[0 : 2 * self.fs]) * (
-            1 / 2
-        )  # 0.5 of the mean signal is considered to be noise
+        self.THR_SIG = np.max(self.ecg_m[0 : 2 * self.fs]) * 0.8
+
+        self.THR_NOISE = np.mean(self.ecg_m[0 : 2 * self.fs]) * 0.8
+        # 0.5 of the mean signal is considered to be noise
 
         self.SIG_LEV = self.THR_SIG
         self.NOISE_LEV = self.THR_NOISE
 
         # Initialize bandpath filter threshold (2 seconds of the bandpass signal)
+        """
         self.THR_SIG1 = np.max(self.ecg_h[0 : 2 * self.fs]) * (
             1 / 3
         )  # 0.25 of the max amplitude
-        self.THR_NOISE1 = np.mean(self.ecg_h[0 : 2 * self.fs]) * (1 / 2)
+        """
+
+        self.THR_SIG1 = np.max(self.ecg_m[0 : 2 * self.fs]) * 0.8
+
+        self.THR_NOISE1 = np.mean(self.ecg_h[0 : 2 * self.fs]) * 0.8
 
         self.SIG_LEV1 = self.THR_SIG1  # Signal level in Bandpassed filter
         self.NOISE_LEV1 = self.THR_NOISE1  # Noise level in Bandpassed filter
@@ -451,6 +463,8 @@ class Ecg_analyzer:
     def run(self):
         if self.gr:
             self.plot_raw_ecg()
+        # preprocessing
+        self.prep_ecg()
         # filters
         self.filter_signal()
         self.fiducial_mark()
@@ -476,8 +490,8 @@ class Ecg_analyzer:
         plt.show()
         """
 
-        """
         plt.figure()
+        plt.plot(self.ecg)
         plt.plot(self.ecg_m, label="Усредненный сигнал")
         plt.scatter(self.qrs_i, self.qrs_c, color="m")
         plt.plot(
@@ -507,9 +521,11 @@ class Ecg_analyzer:
         plt.legend()
         plt.title("QRS-комплексы на усредненном сигнале")
         plt.show()
-        """
 
-        return [self.qrs_amp_raw, self.qrs_i_raw, self.delay]
+        d = np.loadtxt("./data/data1_1.txt", dtype="int")
+        self.amp = self.ecg_m[d]
+
+        return [self.qrs_i, self.qrs_c, self.ecg_m, self.amp]
 
     def test_plot(self, a, b, label_a, label_b, title):
         # plot

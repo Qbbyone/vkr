@@ -11,28 +11,35 @@ class PPGAnalyzer:
         self.ppg_filt = None
         self.fidp = None
         self.min_max_amp = []
+        self.amp = []
+
+    def plot_raw_ppg(self):
+        plt.figure()
+        plt.plot(self.ppg, label="Raw PPG Signal")
+        plt.legend()
+        plt.title("Raw PPG Signal")
+        plt.show()
 
     def filter_ppg(self):
-        # filter cut-offs, hertz
         """
-        lpf_cutoff = 0.7
-        hpf_cutoff = 10
+        Fs = self.fs  # Sampling Frequency (Hz)
+        Fn = Fs / 2  # Nyquist Frequency (Hz)
+        Wp = 24.5 / Fn  # Stopband Frequency (Normalized)
+        Ws = 25.0 / Fn  # Passband Frequency (Normalized)
+        Rp = 1  # Passband Ripple (dB)
+        Rs = 50  # Stopband Ripple (dB)
 
-        # create filter
-        sos_filter = sp.butter(
-            10,
-            [lpf_cutoff, hpf_cutoff],
-            btype="bp",
-            analog=False,
-            output="sos",
-            fs=self.fs,
-        )
+        n, Ws = sp.cheb2ord(Wp, Ws, Rp, Rs)  # Filter Order
+        z, p, k = sp.cheby2(
+            n, Rs, Ws, btype="high", output="zpk"
+        )  # Filter Design, Specify Bandstop
+        sos = sp.zpk2sos(z, p, k)  # Convert To Second-Order-Section For Stability
+        filtered_ppg = sp.sosfiltfilt(sos, self.ppg)  # Filter Signal
 
-        w, h = sp.sosfreqz(sos_filter, 2000, fs=self.fs)
-
-        # filter PPG
-        self.filtered_ppg = sp.sosfiltfilt(sos_filter, self.ppg)
+        h_d = [1 / 8, -1 / 8, -2 / 8, 0, 2 / 8, 1 / 8]
+        self.derivative_ppg = np.convolve(filtered_ppg, h_d, mode="same")
         """
+
         nyquist = 0.5 * self.fs
         low = 0.5 / nyquist
         high = 8.0 / nyquist
@@ -40,20 +47,22 @@ class PPGAnalyzer:
         self.filtered_ppg = sp.filtfilt(b, a, self.ppg)
 
         # Smoothing the signal (optional)
-        smoothed_ppg = np.convolve(self.filtered_ppg, np.ones(5) / 5, mode="same")
+        self.smoothed_ppg = np.convolve(
+            self.filtered_ppg, np.ones(15) / 15, mode="same"
+        )
 
         """
         if self.gr:
             plt.figure()
             plt.plot(self.ppg, label="Сигнал до фильтрации")
-            plt.plot(self.filtered_ppg, label="Сигнал после фильтрации")
+            plt.plot(filtered_ppg, label="Сигнал после фильтрации")
             plt.legend()
             plt.title("Фильтрация сигнала ФПГ")
             plt.show()
 
             plt.figure()
-            plt.plot(self.filtered_ppg, label="Сигнал после фильтрации")
-            plt.plot(smoothed_ppg, label="Сглаженный сигнал")
+            plt.plot(filtered_ppg, label="Сигнал после фильтрации")
+            plt.plot(self.smoothed_ppg, label="Сглаженный сигнал")
             plt.legend()
             plt.title("Сглаживание сигнала ФПГ")
             plt.show()
@@ -95,29 +104,32 @@ class PPGAnalyzer:
 
         d_peaks = d_peaks[:1] + d_peaks[2:]
 
+        # amp
+        d = np.loadtxt("./data/data1_2.txt", dtype="int")
+        self.amp = self.smoothed_ppg[d]
+
         # Plot the results
 
+        """
         plt.figure()
-
         plt.subplot(211)
         plt.plot(self.ppg, label="Сигнал ФПГ до фильтрации")
-        plt.plot(self.filtered_ppg, label="Сигнал ФПГ после фильтрации")
+        plt.plot(self.smoothed_ppg, label="Сигнал ФПГ после фильтрации")
         plt.plot(
             systolic_peaks,
-            self.filtered_ppg[systolic_peaks],
+            self.smoothed_ppg[systolic_peaks],
             "o",
             color="purple",
             label="Пики максимума",
         )
         plt.title("Нахождение пиков максимума на сигнале ФПГ")
         plt.legend()
-
         plt.subplot(212)
         plt.plot(self.ppg, label="Сигнал ФПГ до фильтрации")
-        plt.plot(self.filtered_ppg, label="Сигнал ФПГ после фильтрации")
+        plt.plot(self.smoothed_ppg, label="Сигнал ФПГ после фильтрации")
         plt.plot(
             diastolic_peaks,
-            self.filtered_ppg[diastolic_peaks],
+            self.smoothed_ppg[diastolic_peaks],
             "o",
             color="green",
             label="Пики минимума",
@@ -125,47 +137,43 @@ class PPGAnalyzer:
         plt.title("Нахождение пиков минимума на сигнале ФПГ")
         plt.legend()
         plt.show()
+        """
+
+        self.s = s_peaks
+        self.d = d_peaks
 
         # Find fiducial points
+        """
         onsets, notches = self.find_fiducial_points(
-            self.filtered_ppg, systolic_peaks, fs
+            self.smoothed_ppg, systolic_peaks, fs
         )
+        """
 
-        # Plot the results
-        plt.figure(figsize=(12, 6))
-        plt.plot(self.ppg, label="Сигнал ФПГ до фильтрации")
-        plt.plot(self.filtered_ppg, label="Сигнал ФПГ после фильтрации")
-        plt.plot(
-            s_peaks,
-            self.filtered_ppg[s_peaks],
-            "o",
-            color="purple",
-            label="Систолические пики",
-        )
-        plt.plot(
-            d_peaks,
-            self.filtered_ppg[d_peaks],
-            "o",
-            color="green",
-            label="Диастолические пики",
-        )
-        # plt.plot(onsets, self.filtered_ppg[onsets], "go", label="Onsets")
-        # plt.plot(notches, self.filtered_ppg[notches], "go", label="Дикротические зубцы")
-        plt.title("Сигнал ФПГ с выделенными пиками")
-        # plt.xlabel("Sample Number")
-        # plt.ylabel("Amplitude")
-        plt.legend()
-        plt.show()
-
-        print("----- s_peaks")
-        print(s_peaks, len(d_peaks))
-        print("----- d_peaks")
-        print(d_peaks, len(s_peaks))
-
-        s = [1596, 3314, 5036, 6742, 10129, 11833, 13543, 15249, 16946, 18664]
-        d = [1231, 2917, 4626, 6337, 9726, 11437, 13140, 14846, 16556, 18289]
-        minP = [s[i] - d[i] for i in range(len(d))]
-        # print(minP)
+        if self.gr:
+            plt.figure(figsize=(12, 6))
+            plt.plot(self.ppg, label="Сигнал ФПГ до фильтрации")
+            plt.plot(self.smoothed_ppg, label="Сигнал ФПГ после фильтрации")
+            plt.plot(
+                s_peaks,
+                self.smoothed_ppg[s_peaks],
+                "o",
+                color="purple",
+                label="Систолические пики",
+            )
+            plt.plot(
+                d_peaks,
+                self.smoothed_ppg[d_peaks],
+                "o",
+                color="green",
+                label="Диастолические пики",
+            )
+            # plt.plot(onsets, self.smoothed_ppg[onsets], "go", label="Onsets")
+            # plt.plot(notches, self.smoothed_ppg[notches], "go", label="Дикротические зубцы")
+            plt.title("Сигнал ФПГ с выделенными пиками")
+            # plt.xlabel("Sample Number")
+            # plt.ylabel("Amplitude")
+            plt.legend()
+            plt.show()
 
     def find_fiducial_points(self, signal, peaks, fs):
         onsets = []
@@ -191,15 +199,10 @@ class PPGAnalyzer:
         return onsets, notches
 
     def run(self):
-        """
-        if self.gr:
-            plt.figure()
-            plt.plot(self.ppg, label="Raw PPG Signal")
-            plt.legend()
-            plt.title("Raw PPG Signal")
-            plt.show()
-        """
+        # if self.gr:
+        # self.plot_raw_ppg()
+
         self.filter_ppg()
         self.find_peaks()
 
-        return [self.min_max_amp]
+        return [self.s, self.d, self.amp]

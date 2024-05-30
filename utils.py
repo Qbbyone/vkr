@@ -22,10 +22,9 @@ class Utils:
             values = np.delete(data, (0), axis=0)
             fpg = np.array(values[:, [2]], float)
             fpg_flatten = fpg.flatten()
-            fpg_file_name = f"fpg{file_name[3:]}"
-            np.savetxt(f"signals/input_data/fpg/{fpg_file_name}.txt", fpg_flatten)
+            fpg_file_name = f"ppg{file_name[3:]}"
+            np.savetxt(f"signals/input_data/ppg/{fpg_file_name}.txt", fpg_flatten)
 
-    
     def create_ref_ecg_data(self, file_name):
         if file_name:
             path = f"./raw_data/types/{file_name}.cvs"
@@ -35,5 +34,3 @@ class Utils:
             fpg_flatten = fpg.flatten()
             fpg_file_name = f"fpg{file_name[3:]}"
             np.savetxt(f"signals/input_data/fpg/{fpg_file_name}.txt", fpg_flatten)
-    
-
