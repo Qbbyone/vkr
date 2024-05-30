@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import lfilter, convolve, butter, filtfilt, find_peaks
+from scipy.signal import lfilter, convolve, butter, filtfilt, find_peaks, detrend
+import scipy.io
 
 
 class Ecg_analyzer:
@@ -55,7 +56,47 @@ class Ecg_analyzer:
             plt.title("Raw ECG Signal")
 
     def prep_signal(self):
-        self.prep_ecg = []
+        fbs = scipy.io.loadmat("./filters/FBS1.mat")
+        # Display the numerator and denominator coefficients
+        print(fbs["Num"])
+        print(fbs["Den"])
+
+        # Apply the filter to the ECG signal
+        filt_ecg = lfilter(fbs["Num"].flatten(), fbs["Den"].flatten(), self.ecg)
+
+        filt_ecg = detrend(filt_ecg)
+
+        # Load the filter coefficients from the .mat file
+        fhp = scipy.io.loadmat("./filters/FHP2.mat")
+
+        # Apply the filter
+        filt_ecg1 = lfilter(fhp["Num"].flatten(), fhp["Den"].flatten(), filt_ecg)
+
+        # Initialize filt_ecg2 with zeros
+        filt_ecg2 = np.zeros_like(filt_ecg1)
+
+        # Adjust filt_ecg1 for the moving average calculation
+        filt_ecg1 = np.concatenate((np.full(15, filt_ecg1[0]), filt_ecg1))
+
+        # Calculate the moving average
+        for i in range(15, len(filt_ecg1)):
+            filt_ecg2[i - 15] = np.sum(filt_ecg1[i - 15 : i + 1]) / 16
+
+        # Plotting if gr is True
+        """
+        if self.gr:
+            plt.figure()
+            plt.plot(self.ecg, label="ECG")
+            plt.plot(filt_ecg, label="Filtered ECG")
+            plt.plot(filt_ecg1[15:], label="Filtered ECG1")
+            plt.plot(filt_ecg2, label="Filtered ECG2")
+            plt.grid(which="minor")
+            plt.legend()
+            plt.show()
+        """
+
+        # Adjust filt_ecg2
+        self.prep_ecg = filt_ecg2[9:]
 
     def filter_signal(self):
         if self.fs == 200:
@@ -464,7 +505,7 @@ class Ecg_analyzer:
         if self.gr:
             self.plot_raw_ecg()
         # preprocessing
-        self.prep_ecg()
+        self.prep_signal()
         # filters
         self.filter_signal()
         self.fiducial_mark()

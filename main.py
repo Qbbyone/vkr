@@ -2,7 +2,6 @@ import utils
 import metrics
 import ecg_analyzer
 import ppg_analyzer
-import test_ppg
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as sp
@@ -15,7 +14,6 @@ class BP:
         self.ut = utils.Utils()
         self.ecg = ecg_analyzer.Ecg_analyzer
         self.ppg = ppg_analyzer.PPGAnalyzer
-        self.ppg_new = test_ppg.PPG
 
     def create_file(self):
         self.ut.create_ecg_input_data("pat1_2")
