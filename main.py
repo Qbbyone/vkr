@@ -20,14 +20,14 @@ class BP:
 
     def load_signals_data(self):
         ecg_data = np.loadtxt("./signals/input_data/ecg/ecg1_1.txt", dtype="float")
-        self.ecg_sample = ecg_data[7000:34000]
+        self.ecg_sample = ecg_data[1000:21000]
 
         # self.ut.create_ecg_input_data("pat3_1")
         # self.ut.create_fpg_input_data("pat3_1")
 
         ppg_data = np.loadtxt("./signals/input_data/ppg/ppg1_1.txt", dtype="float")
-        self.ppg_sample = ppg_data
-        # self.ppg_sample = ppg_data[7000:34000]
+        self.ppg_sample = ppg_data[6000:26000]
+        # self.ppg_sample = ppg_data[6000:26000]
 
     def plot_both_signals(self):
         plt.rcParams["figure.figsize"] = [7.50, 3.50]
@@ -40,25 +40,13 @@ class BP:
 
     def get_data_from_signals(self):
         # ECG
-        [qrs_i, qrs_c, ecg_m, amp] = self.ecg(self.ecg_sample, 1000, True).run()
+        [qrs_i, qrs_c, ecg_m, amp] = self.ecg(self.ecg_sample, 1000, False, False).run()
         # [qrs_amp_raw, qrs_i_raw, delay] = self.ecg(self.ecg_sample, 400, True).run()
 
         self.ecg_amp = np.array(amp)
 
-        """
-        plt.rcParams["figure.figsize"] = [7.50, 3.50]
-        plt.rcParams["figure.autolayout"] = True
-        plt.subplot(211)
-        plt.plot(self.ecg_sample)
-        plt.plot(ecg_m)
-        plt.scatter(qrs_i, qrs_c, color="m")
-        plt.subplot(212)
-        plt.plot(self.ppg_sample)
-        plt.show()
-        """
-
         # PPG
-        [s, d, amp] = self.ppg(self.ppg_sample, 1000.0, False).run()
+        [s, d, amp] = self.ppg(self.ppg_sample, 1000.0, False, True).run()
 
         self.ppg_max = s
         self.ppg_min = d
@@ -137,11 +125,11 @@ class BP:
 
     def run(self):
         self.load_signals_data()
-        self.plot_both_signals()
+        # self.plot_both_signals()
         self.get_data_from_signals()
         # self.get_signals_processing_metrics()
         self.get_params_h()
-        self.handle_params()
+        # self.handle_params()
 
 
 bp = BP()

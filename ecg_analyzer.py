@@ -6,11 +6,12 @@ import scipy.io
 
 class Ecg_analyzer:
 
-    def __init__(self, ecg, fs, gr=True):
+    def __init__(self, ecg, fs, gr=True, gr_th=True):
 
         self.ecg = ecg
         self.fs = fs
         self.gr = gr
+        self.gr_th = gr_th
 
         # Initialize
         self.qrs_c = []  # amplitude of R
@@ -56,44 +57,41 @@ class Ecg_analyzer:
             plt.title("Raw ECG Signal")
 
     def prep_signal(self):
+        # fbs filter
         fbs = scipy.io.loadmat("./filters/FBS1.mat")
-        # Display the numerator and denominator coefficients
-        print(fbs["Num"])
-        print(fbs["Den"])
+        num_fbs = fbs[
+            "Num"
+        ].flatten()  # 0.9827   -5.6083   13.6167  -17.9814   13.6167   -5.6083    0.9827
+        den_fbs = fbs[
+            "Den"
+        ].flatten()  # 1.0000   -5.6737   13.6956  -17.9808   13.5376   -5.5435    0.9658
 
-        # Apply the filter to the ECG signal
-        filt_ecg = lfilter(fbs["Num"].flatten(), fbs["Den"].flatten(), self.ecg)
-
+        filt_ecg = lfilter(num_fbs, den_fbs, self.ecg)
         filt_ecg = detrend(filt_ecg)
 
-        # Load the filter coefficients from the .mat file
+        # fhp filter
         fhp = scipy.io.loadmat("./filters/FHP2.mat")
+        num_fhp = fhp["Num"].flatten()  # 0.9992   -3.9967    5.9951   -3.9967    0.9992
+        den_fhp = fhp["Den"].flatten()  # 1.0000   -3.9984    5.9951   -3.9951    0.9984
 
-        # Apply the filter
-        filt_ecg1 = lfilter(fhp["Num"].flatten(), fhp["Den"].flatten(), filt_ecg)
-
-        # Initialize filt_ecg2 with zeros
+        filt_ecg1 = lfilter(num_fhp, den_fhp, filt_ecg)
         filt_ecg2 = np.zeros_like(filt_ecg1)
-
-        # Adjust filt_ecg1 for the moving average calculation
         filt_ecg1 = np.concatenate((np.full(15, filt_ecg1[0]), filt_ecg1))
 
         # Calculate the moving average
         for i in range(15, len(filt_ecg1)):
             filt_ecg2[i - 15] = np.sum(filt_ecg1[i - 15 : i + 1]) / 16
 
-        # Plotting if gr is True
-        """
-        if self.gr:
+        if self.gr_th:
             plt.figure()
-            plt.plot(self.ecg, label="ECG")
-            plt.plot(filt_ecg, label="Filtered ECG")
-            plt.plot(filt_ecg1[15:], label="Filtered ECG1")
-            plt.plot(filt_ecg2, label="Filtered ECG2")
+            plt.plot(self.ecg, label="Сигнал до фильтрации")
+            plt.plot(filt_ecg, label="Сигнал после полосового фильтра")
+            plt.plot(filt_ecg1[15:], label="Сигнал после ФВЧ")
+            plt.plot(filt_ecg2, label="Сглаженный сигнал")
             plt.grid(which="minor")
-            plt.legend()
+            plt.legend(loc="upper left")
+            plt.title("Предварительная обработка сигнала ЭКГ")
             plt.show()
-        """
 
         # Adjust filt_ecg2
         self.prep_ecg = filt_ecg2[9:]
@@ -105,7 +103,8 @@ class Ecg_analyzer:
             a = [1, -2, 1]
             h_list = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             h_l = lfilter(b, a, [float(i) for i in h_list])
-            ecg_l = convolve(self.ecg, h_l)
+            # ecg_l = convolve(self.ecg, h_l)
+            ecg_l = convolve(self.prep_ecg, h_l)
             ecg_l = ecg_l / np.max(np.abs(ecg_l))
             self.delay = 6
             if self.gr:
@@ -156,6 +155,16 @@ class Ecg_analyzer:
             ecg_h = convolve(ecg_l, h_h)
             self.ecg_h = ecg_h / np.max(np.abs(ecg_h))
             self.delay += 16  # 16 samples for highpass filtering
+
+            if self.gr_th:
+                plt.figure()
+                plt.plot(self.prep_ecg, label="Предварительно обработанный сигнал")
+                plt.plot(self.ecg_h, label="Сигнал после ФНЧ и ФВЧ")
+                plt.grid(which="minor")
+                plt.legend(loc="upper left")
+                plt.title("Фильтрация сигнала с применением ФНЧ и ФВЧ")
+                plt.show()
+
             if self.gr:
                 ax3 = plt.subplot(323)
                 ax3.plot(self.ecg_h)
@@ -168,8 +177,19 @@ class Ecg_analyzer:
             Wn = [f1 * 2 / self.fs, f2 * 2 / self.fs]  # cutoff based on fs
             N = 3  # order of 3 less processing
             a, b = butter(N, Wn, btype="band")  # bandpass filtering
-            ecg_h = filtfilt(a, b, self.ecg)
+            # ecg_h = filtfilt(a, b, self.ecg)
+            ecg_h = filtfilt(a, b, self.prep_ecg)
             self.ecg_h = ecg_h / max(abs(ecg_h))
+
+            if self.gr_th:
+                plt.figure()
+                plt.plot(self.prep_ecg, label="Предварительно обработанный сигнал")
+                plt.plot(self.ecg_h, label="Сигнал после полосового фильтра")
+                plt.grid(which="minor")
+                plt.legend(loc="upper left")
+                plt.title("Фильтрация сигнала с применением полосового фильтра")
+                plt.show()
+
             if self.gr:
                 ax3 = plt.subplot(323)
                 ax3.plot(self.ecg_h)
@@ -182,6 +202,16 @@ class Ecg_analyzer:
         ecg_d = ecg_d / np.max(ecg_d)
 
         self.delay += 2  # delay of derivative filter 2 samples
+
+        if self.gr_th:
+            plt.figure()
+            plt.plot(self.ecg_h, label="Сигнал после полосового фильтра")
+            plt.plot(ecg_d, label="Сигнал после фильтра производной")
+            plt.grid(which="minor")
+            plt.legend(loc="upper left")
+            plt.title("Фильтрация сигнала с применением фильтра производной")
+            plt.show()
+
         if self.gr:
             ax4 = plt.subplot(324)
             ax4.plot(ecg_d)
@@ -201,6 +231,16 @@ class Ecg_analyzer:
         self.ecg_m = np.convolve(
             ecg_s, np.ones(round(0.150 * self.fs)) / round(0.150 * self.fs), mode="full"
         )
+
+        if self.gr_th:
+            plt.figure()
+            plt.subplot(211)
+            plt.plot(ecg_s)
+            plt.title("Квадрат сигнала")
+            plt.subplot(212)
+            plt.plot(self.ecg_m)
+            plt.title("Усреднение по скользящему окну")
+            plt.show()
 
         self.delay += 15
         if self.gr:
@@ -259,6 +299,116 @@ class Ecg_analyzer:
     def find_peaks(self):
         fs_r_150 = round(0.150 * self.fs)
         fs_r_200 = round(0.200 * self.fs)
+
+        """
+        for i in range(len(self.pks)):
+            # locate the corresponding peak in the filtered signal
+            if self.locs[i] - fs_r_150 >= 1 and self.locs[i] <= len(self.ecg_h):
+                y_i, x_i = max(
+                    (v, idx)
+                    for idx, v in enumerate(
+                        self.ecg_h[self.locs[i] - fs_r_150 : self.locs[i] + 1]
+                    )
+                )
+            else:
+                if i == 0:
+                    y_i, x_i = max(
+                        (v, idx) for idx, v in enumerate(self.ecg_h[: self.locs[i] + 1])
+                    )
+                    self.ser_back = 1
+                elif self.locs[i] >= len(self.ecg_h):
+                    y_i, x_i = max(
+                        (v, idx)
+                        for idx, v in enumerate(self.ecg_h[self.locs[i] - fs_r_150 :])
+                    )
+
+            # Update the heart rate based on RR intervals
+            if len(self.qrs_c) >= 9:
+                diffRR = np.diff(self.qrs_i[-9:])
+                self.mean_RR = np.mean(diffRR)
+                comp = self.qrs_i[-1] - self.qrs_i[-2]
+                if comp <= 0.92 * self.mean_RR or comp >= 1.16 * self.mean_RR:
+                    self.THR_SIG *= 0.5
+                    self.THR_SIG1 *= 0.5
+                else:
+                    self.m_selected_RR = self.mean_RR
+
+            if self.m_selected_RR:
+                self.test_m = self.m_selected_RR
+            elif self.mean_RR and self.m_selected_RR == 0:
+                self.test_m = self.mean_RR
+            else:
+                self.test_m = 0
+
+            # Find noise and QRS peaks
+            if self.pks[i] >= self.THR_SIG:
+                if len(self.qrs_c) >= 3:
+                    if (self.locs[i] - self.qrs_i[-1]) <= round(0.3600 * self.fs):
+                        Slope1 = np.mean(
+                            np.diff(
+                                self.ecg_m[
+                                    self.locs[i] - round(0.075 * self.fs) : self.locs[i]
+                                ]
+                            )
+                        )
+                        Slope2 = np.mean(
+                            np.diff(
+                                self.ecg_m[
+                                    self.qrs_i[-1] - round(0.075 * self.fs) : self.qrs_i[-1]
+                                ]
+                            )
+                        )
+                        if abs(Slope1) <= abs(0.5 * Slope2):
+                            self.nois_c.append(self.pks[i])
+                            self.nois_i.append(self.locs[i])
+                            self.skip = 1
+                            self.NOISE_LEV1 = 0.125 * y_i + 0.875 * self.NOISE_LEV1
+                            self.NOISE_LEV = 0.125 * self.pks[i] + 0.875 * self.NOISE_LEV
+                    else:
+                        self.skip = 0
+
+                if self.skip == 0:
+                    self.qrs_c.append(self.pks[i])
+                    self.qrs_i.append(self.locs[i])
+
+                if y_i >= self.THR_SIG1:
+                    if self.ser_back:
+                        self.qrs_i_raw.append(x_i)
+                    else:
+                        self.qrs_i_raw.append(
+                            self.locs[i] - round(0.150 * self.fs) + (x_i - 1)
+                        )
+                    self.qrs_amp_raw.append(y_i)
+                    self.SIG_LEV1 = 0.125 * y_i + 0.875 * self.SIG_LEV1
+
+                self.SIG_LEV = 0.125 * self.pks[i] + 0.875 * self.SIG_LEV
+
+            elif self.THR_NOISE <= self.pks[i] and self.pks[i] < self.THR_SIG:
+                self.NOISE_LEV1 = 0.125 * y_i + 0.875 * self.NOISE_LEV1
+                self.NOISE_LEV = 0.125 * self.pks[i] + 0.875 * self.NOISE_LEV
+
+            elif self.pks[i] < self.THR_NOISE:
+                self.nois_c.append(self.pks[i])
+                self.nois_i.append(self.locs[i])
+                self.NOISE_LEV1 = 0.125 * y_i + 0.875 * self.NOISE_LEV1
+                self.NOISE_LEV = 0.125 * self.pks[i] + 0.875 * self.NOISE_LEV
+
+            if self.NOISE_LEV != 0 or self.SIG_LEV != 0:
+                self.THR_SIG = self.NOISE_LEV + 0.25 * abs(self.SIG_LEV - self.NOISE_LEV)
+                self.THR_NOISE = 0.5 * self.THR_SIG
+
+            if self.NOISE_LEV1 != 0 or self.SIG_LEV1 != 0:
+                self.THR_SIG1 = self.NOISE_LEV1 + 0.25 * abs(self.SIG_LEV1 - self.NOISE_LEV1)
+                self.THR_NOISE1 = 0.5 * self.THR_SIG1
+
+            self.SIGL_buf.append(self.SIG_LEV)
+            self.NOISL_buf.append(self.NOISE_LEV)
+            self.THRS_buf.append(self.THR_SIG)
+
+            self.SIGL_buf1.append(self.SIG_LEV1)
+            self.NOISL_buf1.append(self.NOISE_LEV1)
+            self.THRS_buf1.append(self.THR_SIG1)
+        """
 
         for i in range(len(self.pks)):
 
@@ -518,8 +668,6 @@ class Ecg_analyzer:
             self.plot_peaks()
             self.plot_results()
 
-        print(self.qrs_i_raw)
-
         """
         plt.figure()
         plt.subplot(211)
@@ -531,40 +679,93 @@ class Ecg_analyzer:
         plt.show()
         """
 
-        plt.figure()
-        plt.plot(self.ecg)
-        plt.plot(self.ecg_m, label="Усредненный сигнал")
-        plt.scatter(self.qrs_i, self.qrs_c, color="m")
-        plt.plot(
-            self.locs,
-            self.NOISL_buf,
-            linewidth=2,
-            linestyle="--",
-            color="k",
-            label="Уровень шума",
-        )
-        plt.plot(
-            self.locs,
-            self.SIGL_buf,
-            linewidth=2,
-            linestyle="-.",
-            color="r",
-            label="Уровень сигнала",
-        )
-        plt.plot(
-            self.locs,
-            self.THRS_buf,
-            linewidth=2,
-            linestyle="-.",
-            color="g",
-            label="Адаптивный порог",
-        )
-        plt.legend()
-        plt.title("QRS-комплексы на усредненном сигнале")
-        plt.show()
+        if self.gr_th:
+            plt.figure()
+            # plt.plot(self.ecg)
+            plt.plot(self.ecg_m, label="Усредненный сигнал")
+            plt.scatter(self.qrs_i, self.qrs_c, color="m")
+            plt.plot(
+                self.locs,
+                self.NOISL_buf,
+                linewidth=2,
+                linestyle="--",
+                color="k",
+                label="Уровень шума",
+            )
+            plt.plot(
+                self.locs,
+                self.SIGL_buf,
+                linewidth=2,
+                linestyle="-.",
+                color="r",
+                label="Уровень сигнала",
+            )
+            plt.plot(
+                self.locs,
+                self.THRS_buf,
+                linewidth=2,
+                linestyle="-.",
+                color="g",
+                label="Адаптивный порог",
+            )
+            plt.legend(loc="upper left")
+            plt.title("QRS-комплексы на усредненном сигнале")
+            plt.show()
 
         d = np.loadtxt("./data/data1_1.txt", dtype="int")
-        self.amp = self.ecg_m[d]
+        # print(f"THR_SIG: {self.THR_SIG}")
+        # print(f"THR_SIG1: {self.THR_SIG1}")
+        # print(f"SIGL_buf: {self.SIGL_buf}, len: {len(self.SIGL_buf)}")
+        # print(f"qrs_c: {self.qrs_c}, len: {len(self.qrs_c)}")
+        # print(f"qrs_i: {self.qrs_i}, len: {len(self.qrs_i)}")
+        # print(f"R: {d}")
+
+        r_c = []
+        r_i = []
+
+        for idx, i in enumerate(self.qrs_c):
+            if i > self.THR_SIG1:
+                r_c.append(i)
+                r_i.append(self.qrs_i[idx])
+
+        # print(f"r_c: {r_c}")
+        # print(f"r_i: {r_i}")
+
+        if self.gr_th:
+            plt.figure()
+            # plt.plot(self.ecg)
+            plt.plot(self.ecg_m, label="Усредненный сигнал")
+            plt.scatter(r_i, r_c, color="m")
+            plt.plot(
+                self.locs,
+                self.NOISL_buf,
+                linewidth=2,
+                linestyle="--",
+                color="k",
+                label="Уровень шума",
+            )
+            plt.plot(
+                self.locs,
+                self.SIGL_buf,
+                linewidth=2,
+                linestyle="-.",
+                color="r",
+                label="Уровень сигнала",
+            )
+            plt.plot(
+                self.locs,
+                self.THRS_buf,
+                linewidth=2,
+                linestyle="-.",
+                color="g",
+                label="Адаптивный порог",
+            )
+            plt.legend(loc="upper left")
+            plt.title("R-зубцы на усредненном сигнале")
+            plt.show()
+
+        # d = np.loadtxt("./data/data1_1.txt", dtype="int")
+        # self.amp = self.prep_ecg[d]
 
         return [self.qrs_i, self.qrs_c, self.ecg_m, self.amp]
 

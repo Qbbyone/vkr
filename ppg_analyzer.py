@@ -4,10 +4,11 @@ import scipy.signal as sp
 
 
 class PPGAnalyzer:
-    def __init__(self, ppg_signal, fs, gr=True):
+    def __init__(self, ppg_signal, fs, gr=True, gr_th=True):
         self.ppg = ppg_signal
         self.fs = fs
         self.gr = gr
+        self.gr_th = gr_th
         self.ppg_filt = None
         self.fidp = None
         self.min_max_amp = []
@@ -19,6 +20,41 @@ class PPGAnalyzer:
         plt.legend()
         plt.title("Raw PPG Signal")
         plt.show()
+
+    def prep_ppg(self):
+        offset = 3200
+        scale = 30
+        Araw = self.ppg * scale - offset
+
+        # Filter coefficients
+        b1 = [1, 0, 0, 0, 0, -2, 0, 0, 0, 0, 1]
+        a1 = [1, -2, 1]
+
+        # Apply the filter
+        A = sp.lfilter(b1, a1, Araw) / 24 + 30
+        A = (A[3:] + offset) / scale  # Adjust for 0-based indexing in Python
+
+        # High-pass Butterworth filter
+        b, a = sp.butter(4, 0.2 / (self.fs / 2), "high")
+        p2 = sp.lfilter(b, a, A)
+
+        # Low-pass FIR filter
+        Num = sp.firwin(21, 20 / (self.fs / 2), window="hamming")
+        A = sp.lfilter(Num, 1, A)
+
+        p2 = p2 + 50
+
+        if self.gr_th:
+            plt.figure()
+            plt.plot(self.ppg, label="Сигнал до фильтрации")
+            plt.plot(p2, label="Сигнал после ФВЧ")
+            plt.plot(A, label="Сигнал после ФНЧ")
+            plt.grid(which="minor")
+            plt.legend(loc="upper left")
+            plt.title("Предварительная обработка сигнала ФПГ")
+            plt.show()
+
+        return A, p2
 
     def filter_ppg(self):
         """
@@ -51,22 +87,20 @@ class PPGAnalyzer:
             self.filtered_ppg, np.ones(15) / 15, mode="same"
         )
 
-        """
-        if self.gr:
+        if self.gr_th:
             plt.figure()
             plt.plot(self.ppg, label="Сигнал до фильтрации")
-            plt.plot(filtered_ppg, label="Сигнал после фильтрации")
-            plt.legend()
+            plt.plot(self.filtered_ppg, label="Сигнал после фильтрации")
+            plt.legend(loc="upper left")
             plt.title("Фильтрация сигнала ФПГ")
             plt.show()
 
             plt.figure()
-            plt.plot(filtered_ppg, label="Сигнал после фильтрации")
+            plt.plot(self.filtered_ppg, label="Сигнал после фильтрации")
             plt.plot(self.smoothed_ppg, label="Сглаженный сигнал")
-            plt.legend()
+            plt.legend(loc="upper left")
             plt.title("Сглаживание сигнала ФПГ")
             plt.show()
-        """
 
     def find_peaks(self):
         fs = 100
@@ -106,38 +140,31 @@ class PPGAnalyzer:
 
         # amp
         d = np.loadtxt("./data/data1_2.txt", dtype="int")
-        self.amp = self.smoothed_ppg[d]
+        # self.amp = self.smoothed_ppg[d]
 
         # Plot the results
 
-        """
-        plt.figure()
-        plt.subplot(211)
-        plt.plot(self.ppg, label="Сигнал ФПГ до фильтрации")
-        plt.plot(self.smoothed_ppg, label="Сигнал ФПГ после фильтрации")
-        plt.plot(
-            systolic_peaks,
-            self.smoothed_ppg[systolic_peaks],
-            "o",
-            color="purple",
-            label="Пики максимума",
-        )
-        plt.title("Нахождение пиков максимума на сигнале ФПГ")
-        plt.legend()
-        plt.subplot(212)
-        plt.plot(self.ppg, label="Сигнал ФПГ до фильтрации")
-        plt.plot(self.smoothed_ppg, label="Сигнал ФПГ после фильтрации")
-        plt.plot(
-            diastolic_peaks,
-            self.smoothed_ppg[diastolic_peaks],
-            "o",
-            color="green",
-            label="Пики минимума",
-        )
-        plt.title("Нахождение пиков минимума на сигнале ФПГ")
-        plt.legend()
-        plt.show()
-        """
+        if self.gr_th:
+            plt.figure()
+            plt.plot(self.ppg, label="Сигнал ФПГ до фильтрации")
+            plt.plot(self.smoothed_ppg, label="Сигнал ФПГ после фильтрации")
+            plt.plot(
+                systolic_peaks,
+                self.smoothed_ppg[systolic_peaks],
+                "o",
+                color="purple",
+                label="Пики максимума",
+            )
+            plt.plot(
+                diastolic_peaks,
+                self.smoothed_ppg[diastolic_peaks],
+                "o",
+                color="green",
+                label="Пики минимума",
+            )
+            plt.title("Выделение локальных пиков на сигнале ФПГ")
+            plt.legend(loc="upper left")
+            plt.show()
 
         self.s = s_peaks
         self.d = d_peaks
@@ -149,7 +176,7 @@ class PPGAnalyzer:
         )
         """
 
-        if self.gr:
+        if self.gr_th:
             plt.figure(figsize=(12, 6))
             plt.plot(self.ppg, label="Сигнал ФПГ до фильтрации")
             plt.plot(self.smoothed_ppg, label="Сигнал ФПГ после фильтрации")
@@ -172,7 +199,7 @@ class PPGAnalyzer:
             plt.title("Сигнал ФПГ с выделенными пиками")
             # plt.xlabel("Sample Number")
             # plt.ylabel("Amplitude")
-            plt.legend()
+            plt.legend(loc="upper left")
             plt.show()
 
     def find_fiducial_points(self, signal, peaks, fs):
@@ -201,7 +228,7 @@ class PPGAnalyzer:
     def run(self):
         # if self.gr:
         # self.plot_raw_ppg()
-
+        self.prep_ppg()
         self.filter_ppg()
         self.find_peaks()
 
